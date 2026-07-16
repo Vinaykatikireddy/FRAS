@@ -57,14 +57,5 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 EXPOSE 80
 EXPOSE 7860
 
-
-
-RUN ls -lah /var/www
-RUN ls -lah /var/www/portfolio
-RUN ls -lah /var/www/fras
-RUN test -f /var/www/portfolio/index.html && echo "FOUND INDEX" || echo "NO INDEX"
-
-
-
 # Start Supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
