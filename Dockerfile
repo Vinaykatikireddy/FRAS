@@ -51,8 +51,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy built applications
 COPY --from=portfolio-builder /app/portfolio /var/www/portfolio
-COPY --from=fras-builder /app/fras /var/www/fras
-COPY --from=fras-frontend-builder /app/fras/dist /var/www/fras
+COPY --from=fras-builder /app/fras /opt/fras-backend
+COPY --from=fras-frontend-builder /app/fras-frontend/dist /var/www/fras
 
 # Copy NGINX and Supervisor configs
 COPY nginx.conf /etc/nginx/nginx.conf
