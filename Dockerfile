@@ -7,7 +7,7 @@ RUN npm install -g serve
 
 
 RUN echo "Listening ports:"
-RUN ss -tlnp
+RUN netstat -tlnp
 
 
 
