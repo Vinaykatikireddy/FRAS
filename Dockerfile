@@ -29,6 +29,12 @@ RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
     curl \
+    libxcb1 \
+    libxext6 \
+    libsm6 \
+    libxrender1 \
+    ffmpeg \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js for `serve`
