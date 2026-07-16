@@ -24,15 +24,26 @@ COPY facial-recognition-attendance-system/backend/ .
 # Stage 3: Final multi-service image
 FROM python:3.11-slim
 
-# Install NGINX and dependencies
+# Install NGINX, Supervisor, and dependencies
 RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js for `serve`
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+RUN apt-get install -y nodejs
+
+# Install Python dependencies for FRAS
+RUN pip install --no-cache-dir uvicorn
 
 # Copy built applications
 COPY --from=portfolio-builder /app/portfolio /var/www/portfolio
 COPY --from=fras-builder /app/fras /var/www/fras
+
+# Install `serve` globally
+RUN npm install -g serve
 
 # Copy NGINX and Supervisor configs
 COPY nginx.conf /etc/nginx/nginx.conf
