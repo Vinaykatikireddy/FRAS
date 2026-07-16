@@ -35,8 +35,9 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 RUN apt-get install -y nodejs
 
-# Install Python dependencies for FRAS
-RUN pip install --no-cache-dir uvicorn opencv-python-headless
+# Copy requirements.txt from fras-builder and install all dependencies
+COPY --from=fras-builder /app/fras/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy built applications
 COPY --from=portfolio-builder /app/portfolio /var/www/portfolio
