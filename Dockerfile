@@ -1,7 +1,7 @@
 # Stage 1: Build the portfolio (static files)
 FROM node:18-alpine AS portfolio-builder
 WORKDIR /app/portfolio
-COPY vinaykatikireddy/ ./portfolio/
+COPY vinaykatikireddy/ ./
 RUN npm install -g serve
 
 # Stage 2: Build the FRAS backend
