@@ -111,9 +111,9 @@ async def enrich_with_images(students):
     return students
 
 # ============ ROUTES ============
-@app.get("/")
-def home():
-    return {"message": "Backend API is running..."}
+# @app.get("/")
+# def home():
+#     return {"message": "Backend API is running..."}
 
 # ============ AUTH ENDPOINTS ============
 
