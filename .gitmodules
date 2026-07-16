@@ -1,0 +1,6 @@
+[submodule "facial-recognition-attendance-system"]
+	path = facial-recognition-attendance-system
+	url = git@github.com:vinaykatikireddy/facial-recognition-attendance-system
+[submodule "vinaykatikireddy"]
+	path = vinaykatikireddy
+	url = git@github.com:vinaykatikireddy/vinaykatikireddy
