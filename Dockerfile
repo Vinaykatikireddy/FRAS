@@ -49,9 +49,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY --from=portfolio-builder /app/portfolio /var/www/portfolio
 COPY --from=fras-builder /app/fras /var/www/fras
 
-# Install `serve` globally
-RUN npm install -g serve
-
 # Copy NGINX and Supervisor configs
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
