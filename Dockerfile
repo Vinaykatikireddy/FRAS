@@ -36,7 +36,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 RUN apt-get install -y nodejs
 
 # Install Python dependencies for FRAS
-RUN pip install --no-cache-dir uvicorn
+RUN pip install --no-cache-dir uvicorn opencv-python-headless
 
 # Copy built applications
 COPY --from=portfolio-builder /app/portfolio /var/www/portfolio
