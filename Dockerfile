@@ -4,6 +4,13 @@ WORKDIR /app/portfolio
 COPY vinaykatikireddy/ ./portfolio/
 RUN npm install -g serve
 
+
+
+RUN echo "Listening ports:"
+RUN ss -tlnp
+
+
+
 # Stage 2: Build the FRAS backend
 FROM python:3.11-slim AS fras-builder
 WORKDIR /app/fras
