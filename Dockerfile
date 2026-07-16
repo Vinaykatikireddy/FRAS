@@ -4,13 +4,6 @@ WORKDIR /app/portfolio
 COPY vinaykatikireddy/ ./portfolio/
 RUN npm install -g serve
 
-
-
-RUN echo "Listening ports:"
-RUN netstat -tlnp
-
-
-
 # Stage 2: Build the FRAS backend
 FROM python:3.11-slim AS fras-builder
 WORKDIR /app/fras
@@ -65,6 +58,14 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Expose ports
 EXPOSE 80
+EXPOSE 7860
+
+
+
+RUN echo "Listening ports:"
+RUN netstat -tlnp
+
+
 
 # Start Supervisor
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
