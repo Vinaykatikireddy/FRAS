@@ -7,7 +7,7 @@ RUN npm install -g serve
 # Stage 2: Build the FRAS backend
 FROM python:3.11-slim AS fras-builder
 WORKDIR /app/fras
-COPY facial-recognition-attendance-system/backend/ ./fras/
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     ffmpeg \
@@ -16,7 +16,10 @@ RUN apt-get update && apt-get install -y \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir -r ./fras/backend/requirements.txt
+COPY facial-recognition-attendance-system/backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY facial-recognition-attendance-system/backend/ .
 
 # Stage 3: Final multi-service image
 FROM python:3.11-slim
