@@ -5,7 +5,7 @@ COPY vinaykatikireddy/ ./
 RUN npm install -g serve
 
 # FRAS frontend
-FROM node:18-alpine AS fras-frontend-builder
+FROM node:20-alpine AS fras-frontend-builder
 WORKDIR /app/fras-frontend
 COPY facial-recognition-attendance-system/frontend/package.json ./
 RUN npm install
@@ -44,10 +44,6 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
-
-# Install Node.js for `serve`
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-RUN apt-get install -y nodejs
 
 # Copy requirements.txt from fras-builder and install all dependencies
 COPY --from=fras-builder /app/fras/requirements.txt .
