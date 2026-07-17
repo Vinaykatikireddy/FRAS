@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -y \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-    
+COPY facial-recognition-attendance-system/backend/requirements.txt .
 RUN pip install -r requirements.txt
 
 # Copy built applications
