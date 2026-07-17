@@ -25,8 +25,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY facial-recognition-attendance-system/backend/requirements.txt .
-RUN pip install -r requirements.txt
-COPY --from=fras-builder /usr/local /usr/local
 
 COPY facial-recognition-attendance-system/backend/ .
 
@@ -45,6 +43,9 @@ RUN apt-get update && apt-get install -y \
     ffmpeg \
     libgl1 \
     && rm -rf /var/lib/apt/lists/*
+
+    
+RUN pip install -r requirements.txt
 
 # Copy built applications
 COPY --from=portfolio-builder /app/portfolio /var/www/portfolio
