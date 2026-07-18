@@ -1,55 +1,31 @@
-# Stage 1: Build the portfolio (static files)
-FROM node:18-alpine AS portfolio-builder
-WORKDIR /app/portfolio
-COPY portfolio/ ./
-RUN npm install -g serve
-
 # FRAS frontend
 FROM node:20-alpine AS fras-frontend-builder
 WORKDIR /app/fras-frontend
-COPY facial-recognition-attendance-system/frontend/package.json ./
-RUN npm install
+COPY facial-recognition-attendance-system/frontend/package*.json ./
+RUN npm ci
 COPY facial-recognition-attendance-system/frontend/ .
 RUN npm run build
 
-# Stage 2: Build the FRAS backend
-FROM python:3.11-slim AS fras-builder
-WORKDIR /app/fras
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    libgl1 \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY facial-recognition-attendance-system/backend/requirements.txt .
-
-COPY facial-recognition-attendance-system/backend/ .
-
-# Stage 3: Final multi-service image
+# Final multi-service image
 FROM python:3.11-slim
+WORKDIR /app
 
 # Install NGINX, Supervisor, and dependencies
-RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
-    curl \
-    libxcb1 \
-    libxext6 \
-    libsm6 \
-    libxrender1 \
-    ffmpeg \
-    libgl1 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y nginx supervisor curl libxcb1 libxext6 libsm6 libxrender1 ffmpeg libgl1 && rm -rf /var/lib/apt/lists/*
 
+# Install Python requirements
 COPY facial-recognition-attendance-system/backend/requirements.txt .
 RUN pip install -r requirements.txt
 
+# Blog
+COPY blog/ ./blog
+
+# Portfolio
+COPY portfolio/ ./portfolio
+
 # Copy built applications
-COPY --from=portfolio-builder /app/portfolio /var/www/portfolio
-COPY --from=fras-builder /app/fras /opt/fras-backend
+COPY facial-recognition-attendance-system/backend/ /opt/fras-backend
 COPY --from=fras-frontend-builder /app/fras-frontend/dist /var/www/fras
 
 # Copy NGINX and Supervisor configs
