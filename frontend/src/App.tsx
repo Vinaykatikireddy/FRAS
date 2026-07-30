@@ -19,14 +19,14 @@ const FacultyAssignments = lazy(() => import('./pages/faculty/FacultyAssignments
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = localStorage.getItem('auth')
   if (!auth) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/fras/login" replace />
   }
   return <>{children}</>
 }
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/fras">
       <Suspense fallback={<Layout />}>
         <Routes>
           <Route path="/" element={ <Layout /> }>
