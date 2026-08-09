@@ -5,6 +5,12 @@ import os
 import json
 import traceback
 
+
+import asyncio
+import tempfile
+from gradio_client import Client, handle_file
+
+
 import cv2
 import numpy as np
 import uvicorn
@@ -20,7 +26,6 @@ from passlib.context import CryptContext
 from supabase import create_client
 
 import db
-import face_recognition
 
 load_dotenv()
 
@@ -32,6 +37,13 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 1
 BUCKET = "student_images"
+
+# Face recognition model
+FACE_RECOGNITION_SPACE = "VinayKatikireddy/face-recognition"
+
+face_client = Client(
+    FACE_RECOGNITION_SPACE
+)
 
 # Initialize Supabase
 supabase = None
@@ -109,6 +121,31 @@ async def enrich_with_images(students):
         except Exception as e:
             student["image"] = None
     return students
+
+async def call_face_api(image_path: str, api_name: str):
+    """
+    Call the ZeroGPU Gradio Space without blocking
+    the FastAPI event loop.
+    """
+    return await asyncio.to_thread(
+        face_client.predict,
+        image=handle_file(image_path),
+        api_name=api_name
+    )
+
+
+async def call_detect_faces(image_path: str):
+    return await call_face_api(
+        image_path,
+        "/detect_faces"
+    )
+
+
+async def call_generate_embedding(image_path: str):
+    return await call_face_api(
+        image_path,
+        "/generate_embedding"
+    )
 
 # ============ ROUTES ============
 @app.get("/")
@@ -250,7 +287,6 @@ async def add_student(
         try:
             embedding_list = json.loads(embedding)
             if isinstance(embedding_list, list) and len(embedding_list) == 512:
-                from pgvector import Vector
                 
                 await db.query(
                     """
@@ -587,7 +623,7 @@ async def generate_embedding(images: list[UploadFile] = File(...), regid: str = 
                 continue
             
             # Generate the embedding by passing the matrix directly
-            embedding = face_recognition.generate_face_embedding(cv_img)
+            embedding = await call_generate_embedding(cv_img)
             if embedding.all():
                 embeddings.append(embedding)
         
@@ -673,9 +709,9 @@ async def recognize_attendance(images: list[UploadFile] = File(...), authorizati
             
             if cv_img is None:
                 continue
-            
-            faces = face_recognition.detect_faces(cv_img, align=True)
-            
+
+            faces = await call_detect_faces(cv_img)
+
             for face_obj in faces:
                 face_matrix = (face_obj["face"] * 255).astype(np.uint8)
                 
@@ -683,16 +719,36 @@ async def recognize_attendance(images: list[UploadFile] = File(...), authorizati
                 face_matrix = cv2.resize(face_matrix, (160, 160))
                 
                 face_matrix = cv2.cvtColor(face_matrix, cv2.COLOR_RGB2BGR)
-                
-                embedding = face_recognition.generate_face_embedding(face_matrix)
+
+                embedding = await call_generate_embedding(face_matrix)
 
                 if not embedding.all() or len(embedding) != 512:
                     print("continuing.")
                     continue
 
-                match = await face_recognition.match_face(embedding)
-                print(match)
+                threshold = float(os.getenv("FACE_MATCHING_THRESHOLD", "0.68"))
 
+                async with db.pool.acquire() as conn:
+                    match = await conn.fetchrow(
+                        """
+                        SELECT regid, distance
+                        FROM (
+                            SELECT regid, (embedding <=> $1) AS distance
+                            FROM face_embeddings
+                        ) sub
+                        WHERE distance <= $2
+                        ORDER BY distance ASC
+                        LIMIT 1
+                        """,
+                        embedding, 1-threshold
+                    )
+                    
+                    if not match:
+                        print(f"No match found within threshold {threshold}.")
+                        continue
+
+                    print(f"Match found: RegID={match['regid']}, Distance={match['distance']:.4f}")
+                
                 if match and match["regid"] not in [s["regid"] for s in recognized_students]:
                     recognized_students.append({
                         "regid": match["regid"],

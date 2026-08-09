@@ -1,7 +1,7 @@
 import re
 from datetime import date
 
-# Allowed values for fixed-choice fields (single source of truth)
+# Allowed values for fixed-choice fields (have to fetch from db in future versions)
 VALID_GENDERS = {"M", "F"}
 VALID_LAB_SECTIONS = {"A", "B"}
 VALID_SEMESTERS = {"First Semester", "Second Semester", "Third Semester", "Fourth Semester", "Fifth Semester", "Sixth Semester", "Seventh Semester", "Eighth Semester"}
