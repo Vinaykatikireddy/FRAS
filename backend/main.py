@@ -599,7 +599,7 @@ async def delete_student(regid: str, authorization: str = Header(...)):
     except Exception as err:
         print(f"Delete student error: {err}\n{traceback.format_exc()}")
         return JSONResponse(status_code=500, content={"error": "Failed to delete student"})
-
+"""
 @app.post("/generate-embedding")
 async def generate_embedding(images: list[UploadFile] = File(...), regid: str = Form(...), authorization: str = Header(...)):
     try:
@@ -640,6 +640,125 @@ async def generate_embedding(images: list[UploadFile] = File(...), regid: str = 
     except Exception as err:
         print(f"Embedding generation error: {err}\n{traceback.format_exc()}")
         return JSONResponse(status_code=500, content={"error": "Failed to generate embedding"})
+"""
+
+@app.post("/generate-embedding")
+async def generate_embedding(
+    images: list[UploadFile] = File(...),
+    regid: str = Form(...),
+    authorization: str = Header(...)
+):
+    try:
+        await get_current_user(authorization)
+
+        if not images or len(images) > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Please upload 1-10 images"
+            )
+
+        embeddings = []
+
+        for img in images:
+
+            contents = await img.read()
+
+            if not contents:
+                continue
+
+            # ------------------------------------------------
+            # Save image temporarily
+            # ------------------------------------------------
+
+            with tempfile.NamedTemporaryFile(
+                suffix=".jpg",
+                delete=False
+            ) as temp_file:
+
+                temp_file.write(contents)
+                image_path = temp_file.name
+
+            try:
+
+                # ------------------------------------------------
+                # ZeroGPU → ArcFace embedding
+                # ------------------------------------------------
+
+                embedding = await call_generate_embedding(
+                    image_path
+                )
+
+                if embedding is None:
+                    continue
+
+                embedding = np.asarray(
+                    embedding,
+                    dtype=np.float32
+                )
+
+                if embedding.size != 512:
+                    print(
+                        f"Invalid embedding size: "
+                        f"{embedding.size}"
+                    )
+                    continue
+
+                embeddings.append(embedding)
+
+            finally:
+
+                try:
+                    os.remove(image_path)
+                except OSError:
+                    pass
+
+        if not embeddings:
+            raise HTTPException(
+                status_code=400,
+                detail="No valid faces detected in the images"
+            )
+
+        # ------------------------------------------------
+        # Average all embeddings
+        # ------------------------------------------------
+
+        avg_embedding = np.mean(
+            embeddings,
+            axis=0
+        )
+
+        # Normalize again after averaging
+        norm = np.linalg.norm(avg_embedding)
+
+        if norm == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid averaged embedding"
+            )
+
+        avg_embedding = avg_embedding / norm
+
+        return {
+            "embedding": avg_embedding.tolist(),
+            "regid": regid
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as err:
+
+        print(
+            f"Embedding generation error: "
+            f"{err}\n{traceback.format_exc()}"
+        )
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Failed to generate embedding"
+            }
+        )
 
 # ============ ATTENDANCE ENDPOINTS ============
 @app.post("/attendance")
@@ -692,7 +811,7 @@ async def submit_attendance(data: dict, authorization: str = Header(...)):
     except Exception as err:
         print(f"Submit attendance error: {err}")
         return JSONResponse(status_code=500, content={"error": "Failed to submit attendance"})
-
+"""
 @app.post("/attendance/recognize")
 async def recognize_attendance(images: list[UploadFile] = File(...), authorization: str = Header(...)):
     try:
@@ -730,7 +849,7 @@ async def recognize_attendance(images: list[UploadFile] = File(...), authorizati
 
                 async with db.pool.acquire() as conn:
                     match = await conn.fetchrow(
-                        """
+                        ""
                         SELECT regid, distance
                         FROM (
                             SELECT regid, (embedding <=> $1) AS distance
@@ -739,7 +858,7 @@ async def recognize_attendance(images: list[UploadFile] = File(...), authorizati
                         WHERE distance <= $2
                         ORDER BY distance ASC
                         LIMIT 1
-                        """,
+                        "",
                         embedding, 1-threshold
                     )
                     
@@ -762,6 +881,267 @@ async def recognize_attendance(images: list[UploadFile] = File(...), authorizati
     except Exception as err:
         print(f"Face recognition error: {err}\n{traceback.format_exc()}")
         return JSONResponse(status_code=500, content={"error": "Face recognition failed", "details": str(err)})
+"""
+
+@app.post("/attendance/recognize")
+async def recognize_attendance(
+    images: list[UploadFile] = File(...),
+    authorization: str = Header(...)
+):
+    try:
+        await get_current_user(authorization)
+
+        if not images or len(images) > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Please upload 1-10 images"
+            )
+
+        recognized_students = []
+
+        for image in images:
+
+            # ------------------------------------------------
+            # Save uploaded image temporarily
+            # ------------------------------------------------
+
+            contents = await image.read()
+
+            if not contents:
+                continue
+
+            with tempfile.NamedTemporaryFile(
+                suffix=".jpg",
+                delete=False
+            ) as temp_file:
+
+                temp_file.write(contents)
+                original_path = temp_file.name
+
+            try:
+
+                # ------------------------------------------------
+                # 1. Detect faces on ZeroGPU
+                # ------------------------------------------------
+
+                faces = await call_detect_faces(
+                    original_path
+                )
+
+                if not faces:
+                    print("No faces detected.")
+                    continue
+
+                print(
+                    f"Faces detected: {len(faces)}"
+                )
+
+                # ------------------------------------------------
+                # Read original image locally
+                # ------------------------------------------------
+
+                nparr = np.frombuffer(
+                    contents,
+                    np.uint8
+                )
+
+                cv_img = cv2.imdecode(
+                    nparr,
+                    cv2.IMREAD_COLOR
+                )
+
+                if cv_img is None:
+                    continue
+
+                image_height, image_width = cv_img.shape[:2]
+
+                # ------------------------------------------------
+                # 2. Process every detected face
+                # ------------------------------------------------
+
+                for face_index, face_obj in enumerate(faces):
+
+                    facial_area = face_obj.get(
+                        "facial_area"
+                    )
+
+                    if not facial_area:
+                        continue
+
+                    # RetinaFace facial_area format:
+                    #
+                    # {
+                    #     "x": ...,
+                    #     "y": ...,
+                    #     "w": ...,
+                    #     "h": ...
+                    # }
+
+                    x = int(facial_area.get("x", 0))
+                    y = int(facial_area.get("y", 0))
+                    w = int(facial_area.get("w", 0))
+                    h = int(facial_area.get("h", 0))
+
+                    if w <= 0 or h <= 0:
+                        continue
+
+                    # Clamp coordinates to image boundaries
+                    x1 = max(0, x)
+                    y1 = max(0, y)
+                    x2 = min(image_width, x + w)
+                    y2 = min(image_height, y + h)
+
+                    if x2 <= x1 or y2 <= y1:
+                        continue
+
+                    face_crop = cv_img[
+                        y1:y2,
+                        x1:x2
+                    ]
+
+                    if face_crop.size == 0:
+                        continue
+
+                    # ------------------------------------------------
+                    # Save face crop temporarily
+                    # ------------------------------------------------
+
+                    with tempfile.NamedTemporaryFile(
+                        suffix=".jpg",
+                        delete=False
+                    ) as face_file:
+
+                        cv2.imwrite(
+                            face_file.name,
+                            face_crop
+                        )
+
+                        face_path = face_file.name
+
+                    try:
+
+                        # ------------------------------------------------
+                        # 3. Generate embedding on ZeroGPU
+                        # ------------------------------------------------
+
+                        embedding = await call_generate_embedding(
+                            face_path
+                        )
+
+                        if embedding is None:
+                            print(
+                                "Embedding generation failed."
+                            )
+                            continue
+
+                        embedding = np.asarray(
+                            embedding,
+                            dtype=np.float32
+                        )
+
+                        if embedding.size != 512:
+                            print(
+                                f"Invalid embedding size: "
+                                f"{embedding.size}"
+                            )
+                            continue
+
+                        # ------------------------------------------------
+                        # 4. Match against PostgreSQL / pgvector
+                        # ------------------------------------------------
+
+                        threshold = float(
+                            os.getenv(
+                                "FACE_MATCHING_THRESHOLD",
+                                "0.68"
+                            )
+                        )
+
+                        async with db.pool.acquire() as conn:
+
+                            match = await conn.fetchrow(
+                                """
+                                SELECT regid, distance
+                                FROM (
+                                    SELECT
+                                        regid,
+                                        (embedding <=> $1) AS distance
+                                    FROM face_embeddings
+                                ) sub
+                                WHERE distance <= $2
+                                ORDER BY distance ASC
+                                LIMIT 1
+                                """,
+                                embedding.tolist(),
+                                1 - threshold
+                            )
+
+                        if not match:
+                            print(
+                                f"No match found within "
+                                f"threshold {threshold}."
+                            )
+                            continue
+
+                        print(
+                            f"Match found: "
+                            f"RegID={match['regid']}, "
+                            f"Distance={match['distance']:.4f}"
+                        )
+
+                        # ------------------------------------------------
+                        # 5. Add unique student
+                        # ------------------------------------------------
+
+                        if match["regid"] not in [
+                            s["regid"]
+                            for s in recognized_students
+                        ]:
+
+                            recognized_students.append({
+                                "regid": match["regid"],
+                                "confidence": float(
+                                    1 - match["distance"]
+                                )
+                            })
+
+                    finally:
+
+                        # Remove temporary face crop
+                        try:
+                            os.remove(face_path)
+                        except OSError:
+                            pass
+
+            finally:
+
+                # Remove original temporary image
+                try:
+                    os.remove(original_path)
+                except OSError:
+                    pass
+
+        return {
+            "recognized_students": recognized_students
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as err:
+
+        print(
+            f"Face recognition error: "
+            f"{err}\n{traceback.format_exc()}"
+        )
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Face recognition failed",
+                "details": str(err)
+            }
+        )
 
 @app.get("/attendance/summary/{regid}")
 async def get_attendance_summary(regid: str, authorization: str = Header(...)):
