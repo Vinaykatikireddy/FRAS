@@ -41,8 +41,8 @@ BUCKET = "student_images"
 # Face recognition model
 FACE_RECOGNITION_SPACE = "VinayKatikireddy/face-recognition"
 
-#face_client = Client(FACE_RECOGNITION_SPACE)
-face_client = None
+face_client = Client(FACE_RECOGNITION_SPACE)
+#face_client = None
 # Initialize Supabase
 supabase = None
 if SUPABASE_URL and SUPABASE_KEY:
