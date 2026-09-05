@@ -4,11 +4,11 @@ import type { ApiError } from '../types'
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL
 
 if (!API_BASE_URL) {
-  console.warn('VITE_BACKEND_URL not set, using default vinaykatikireddy-face-recognition.hf.space')
+  console.warn('VITE_BACKEND_URL not set, using default /fras/api/')
 }
 
 const api = axios.create({
-  baseURL: API_BASE_URL || 'https://vinaykatikireddy-portfolio.hf.space/fras/api/',
+  baseURL: API_BASE_URL || '/fras/api/',
   //baseURL: 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
