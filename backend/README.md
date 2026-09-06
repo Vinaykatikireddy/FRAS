@@ -69,7 +69,7 @@ Student images are stored in Supabase Storage bucket `student_images` with struc
 ## Security Notes
 
 - Change the default admin password immediately
-- Use a strong `JWT_SECRET` in production
+- Use a strong `SECRET_KEY` in production
 - Enable HTTPS in production
 - Set appropriate CORS origins
 - Review Supabase storage policies

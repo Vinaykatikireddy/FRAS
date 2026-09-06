@@ -1,10 +1,10 @@
 import axios, { AxiosError } from 'axios'
 import type { ApiError } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL
+const API_BASE_URL = import.meta.env.VITE_FRAS_BASE_URL
 
 if (!API_BASE_URL) {
-  console.warn('VITE_BACKEND_URL not set, using default vinaykatikireddy-face-recognition.hf.space')
+  console.warn('VITE_FRAS_BASE_URL not set, using default vinaykatikireddy-face-recognition.hf.space')
 }
 
 const api = axios.create({

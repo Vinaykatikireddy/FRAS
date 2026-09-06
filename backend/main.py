@@ -30,10 +30,9 @@ import db
 load_dotenv()
 
 # Configuration
-PORT = int(os.getenv("PORT", 3000))
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-JWT_SECRET = os.getenv("JWT_SECRET")
+SUPABASE_URL = os.getenv("FRAS_SUPABASE_URL")
+SUPABASE_KEY = os.getenv("FRAS_SUPABASE_SERVICE_ROLE_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 1
 BUCKET = "student_images"
@@ -99,7 +98,7 @@ async def get_current_user(authorization: str):
         if scheme.lower() != "bearer":
             raise HTTPException(status_code=401, detail="Invalid authentication scheme")
         
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[JWT_ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -171,7 +170,7 @@ async def login(username: str = Form(...), password: str = Form(...)):
         # Create JWT token
         expire = datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRY_HOURS)
         to_encode = {"sub": username, "exp": expire}
-        token = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        token = jwt.encode(to_encode, SECRET_KEY, algorithm=JWT_ALGORITHM)
         return {
             "access_token": token,
             "username": username
@@ -1052,7 +1051,7 @@ async def recognize_attendance(
 
                         threshold = float(
                             os.getenv(
-                                "FACE_MATCHING_THRESHOLD",
+                                "FRAS_FACE_MATCHING_THRESHOLD",
                                 "0.68"
                             )
                         )
@@ -1239,4 +1238,4 @@ async def get_dashboard_stats(authorization: str = Header(...)):
         raise HTTPException(status_code=500, detail="Failed to load dashboard")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
+    uvicorn.run(app, host="0.0.0.0", port=3000)

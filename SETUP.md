@@ -53,7 +53,7 @@ cp .env.example .env
 # - SUPABASE_URL
 # - SUPABASE_SERVICE_ROLE_KEY  
 # - DATABASE_URL (PostgreSQL with pgvector)
-# - JWT_SECRET (generate random 32+ character string)
+# - SECRET_KEY (generate random 32+ character string)
 
 # Run server
 python main.py
@@ -235,7 +235,7 @@ UPDATE logins SET password = '$2b$12$hashed_password' WHERE username = 'admin';
 
 ### Backend
 1. Use production PostgreSQL instance with pgvector extension
-2. Set strong JWT_SECRET (32+ characters)
+2. Set strong SECRET_KEY (32+ characters)
 3. Enable HTTPS
 4. Set appropriate CORS origins in main.py
 5. Use environment variables from secrets manager

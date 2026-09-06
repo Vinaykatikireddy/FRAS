@@ -6,7 +6,7 @@ from pgvector.asyncpg import register_vector
 load_dotenv()
 
 pool = None
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("FRAS_DATABASE_URL")
 
 async def init_connection(conn):
     await register_vector(conn)
@@ -16,7 +16,7 @@ async def init_pool():
     pool = await asyncpg.create_pool(
         dsn=DATABASE_URL,
         min_size=1,
-        max_size=int(os.getenv("DB_CONN_LIMIT", 10)),
+        max_size=int(os.getenv("FRAS_DB_CONN_LIMIT", 10)),
         command_timeout=10,
         statement_cache_size=0,
         init=init_connection
