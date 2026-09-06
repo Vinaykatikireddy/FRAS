@@ -8,7 +8,7 @@ if (!API_BASE_URL) {
 }
 
 const api = axios.create({
-  baseURL: API_BASE_URL || 'https://vinaykatikireddy-portfolio.hf.space/fras/api/',
+  baseURL: API_BASE_URL || '/fras/api/',
   //baseURL: 'http://localhost:3000',
   headers: {
     'Content-Type': 'application/json',
